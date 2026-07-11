@@ -1,0 +1,101 @@
+Product,Category,Sales,Quantity,City,Customer_Age
+Product 1,Home,1251,49,New York,59
+Product 2,Toys,334,49,Chicago,23
+Product 3,Books,400,12,New York,32
+Product 4,Toys,979,39,Phoenix,60
+Product 5,Toys,1129,2,Los Angeles,54
+Product 6,Clothing,1256,3,Los Angeles,50
+Product 7,Books,1271,49,Los Angeles,25
+Product 8,Books,702,37,Chicago,61
+Product 9,Books,606,49,Phoenix,61
+Product 10,Toys,1797,17,New York,22
+Product 11,Home,1951,49,Houston,56
+Product 12,Books,1004,2,New York,21
+Product 13,Toys,298,2,Houston,23
+Product 14,Clothing,883,28,New York,62
+Product 15,Home,925,23,Phoenix,49
+Product 16,Clothing,1770,37,Houston,69
+Product 17,Home,1160,32,Chicago,47
+Product 18,Toys,1962,33,New York,64
+Product 19,Electronics,812,1,New York,52
+Product 20,Home,1685,19,Houston,57
+Product 21,Clothing,842,2,Chicago,69
+Product 22,Toys,1992,44,Chicago,33
+Product 23,Home,1228,26,Phoenix,30
+Product 24,Electronics,1441,32,Chicago,67
+Product 25,Electronics,702,6,Chicago,59
+Product 26,Books,966,32,Chicago,47
+Product 27,Books,597,4,Los Angeles,36
+Product 28,Clothing,1070,11,Phoenix,34
+Product 29,Home,994,17,New York,36
+Product 30,Home,592,38,Houston,45
+Product 31,Books,406,24,New York,43
+Product 32,Home,1238,5,Phoenix,54
+Product 33,Home,1777,34,Houston,43
+Product 34,Electronics,1091,6,Phoenix,40
+Product 35,Books,1684,22,Chicago,26
+Product 36,Toys,1914,11,Houston,29
+Product 37,Books,1798,48,Chicago,18
+Product 38,Toys,1063,16,New York,18
+Product 39,Electronics,942,33,New York,64
+Product 40,Clothing,1464,9,Houston,51
+Product 41,Home,763,6,Houston,49
+Product 42,Electronics,1220,16,Phoenix,65
+Product 43,Home,295,29,Phoenix,42
+Product 44,Clothing,1957,3,Chicago,57
+Product 45,Clothing,684,20,Houston,62
+Product 46,Electronics,1630,36,New York,18
+Product 47,Clothing,430,19,Phoenix,33
+Product 48,Toys,948,26,Phoenix,56
+Product 49,Clothing,1878,3,New York,22
+Product 50,Home,1394,19,Phoenix,39
+Product 51,Home,740,20,Chicago,46
+Product 52,Home,1259,32,Houston,20
+Product 53,Home,724,7,New York,29
+Product 54,Toys,1383,41,Houston,43
+Product 55,Books,1922,33,Phoenix,33
+Product 56,Electronics,1466,40,Phoenix,68
+Product 57,Home,1309,39,New York,54
+Product 58,Clothing,777,18,Chicago,39
+Product 59,Home,881,40,Los Angeles,46
+Product 60,Clothing,756,1,New York,31
+Product 61,Clothing,1797,11,Los Angeles,45
+Product 62,Home,1212,28,Los Angeles,22
+Product 63,Toys,845,25,Chicago,64
+Product 64,Clothing,995,23,Los Angeles,66
+Product 65,Clothing,1251,31,Los Angeles,47
+Product 66,Home,1843,30,Chicago,63
+Product 67,Clothing,1779,42,Los Angeles,69
+Product 68,Clothing,1563,35,Los Angeles,22
+Product 69,Home,1554,7,Los Angeles,29
+Product 70,Home,1863,16,New York,33
+Product 71,Electronics,1729,26,New York,43
+Product 72,Toys,1571,48,New York,43
+Product 73,Toys,1696,49,Chicago,65
+Product 74,Clothing,1454,2,Phoenix,38
+Product 75,Toys,389,1,Los Angeles,56
+Product 76,Clothing,1448,48,Los Angeles,53
+Product 77,Electronics,1608,12,Chicago,50
+Product 78,Home,1600,5,Los Angeles,47
+Product 79,Home,1506,37,New York,54
+Product 80,Home,832,32,Phoenix,40
+Product 81,Toys,827,9,Houston,27
+Product 82,Electronics,1172,41,Los Angeles,22
+Product 83,Toys,1968,35,New York,53
+Product 84,Toys,1482,19,Houston,51
+Product 85,Electronics,1582,48,Phoenix,69
+Product 86,Electronics,909,16,Houston,48
+Product 87,Electronics,1679,3,New York,27
+Product 88,Electronics,1634,20,Houston,36
+Product 89,Home,848,24,Chicago,49
+Product 90,Books,517,33,Houston,18
+Product 91,Books,1900,24,Los Angeles,22
+Product 92,Electronics,1448,11,Los Angeles,62
+Product 93,Books,1457,49,Chicago,21
+Product 94,Books,883,8,New York,33
+Product 95,Electronics,863,36,Los Angeles,41
+Product 96,Books,1597,38,Phoenix,33
+Product 97,Toys,1895,40,Los Angeles,19
+Product 98,Clothing,1831,20,Los Angeles,66
+Product 99,Clothing,1695,35,New York,45
+Product 100,Electronics,1456,48,Houston,49
