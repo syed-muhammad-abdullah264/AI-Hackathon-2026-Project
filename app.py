@@ -682,6 +682,13 @@ def load_data(uploaded_file):
         return st.session_state.df
 
 # -------------------- STATISTICS --------------------
+def find_age_column(df):
+    for col in df.columns:
+        if re.search(r'(^|[^a-z])age([^a-z]|$)', str(col), flags=re.IGNORECASE):
+            return col
+    return None
+
+
 def get_stats(df):
     stats = {
         'Rows': df.shape[0],
@@ -715,9 +722,12 @@ def get_smart_insights(df):
         top_city = df['City'].value_counts().idxmax()
         insights.append(("Top city", top_city, "Most active region"))
 
-    if 'Customer_Age' in df.columns:
-        age_range = f"{int(df['Customer_Age'].min())}–{int(df['Customer_Age'].max())}"
-        insights.append(("Age range", age_range, "Customer age spread"))
+    age_col = find_age_column(df)
+    if age_col:
+        age_values = pd.to_numeric(df[age_col], errors='coerce').dropna()
+        if not age_values.empty:
+            age_range = f"{int(age_values.min())}–{int(age_values.max())}"
+            insights.append(("Age range", age_range, "Age spread"))
 
     missing_ratio = df.isnull().mean().mean()
     health_score = max(0, min(100, int(round(100 - (missing_ratio * 100)))))
@@ -761,36 +771,134 @@ def get_data_story(df):
         parts.append("This dataset contains a rich mix of values ready for exploration.")
     return " ".join(parts)
 
-# -------------------- Q&A ENGINE (rule-based) --------------------
+# -------------------- AI HELPER --------------------
+def get_ai_response(prompt):
+    groq_key = os.getenv("GROQ_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+
+    if not groq_key and not openai_key:
+        return None
+
+    try:
+        import requests
+
+        if groq_key:
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            payload = {
+                "model": "llama-3.1-8b-instant",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.3,
+            }
+            headers = {"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}
+        else:
+            url = "https://api.openai.com/v1/chat/completions"
+            payload = {
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.3,
+            }
+            headers = {"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"}
+
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("choices"):
+                return data["choices"][0]["message"]["content"].strip()
+    except Exception:
+        return None
+
+    return None
+
+# -------------------- Q&A ENGINE (rule-based + optional AI) --------------------
 def answer_question(df, question):
     q = question.lower()
+
+    def find_column_like(columns, keywords):
+        for col in columns:
+            col_lower = str(col).lower()
+            if all(keyword in col_lower for keyword in keywords):
+                return col
+        return None
+
+    def get_value_for_column(series):
+        return series.iloc[0] if len(series) > 0 else None
+
+    if os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY"):
+        try:
+            data_preview = df.head(5).to_string(index=False)
+            ai_prompt = f"""
+            You are a helpful data analyst.
+            Dataset columns: {', '.join(df.columns)}.
+            Question: {question}
+            Use the data to answer clearly and concisely in one short paragraph.
+            Data preview:
+            {data_preview}
+            """
+            ai_answer = get_ai_response(ai_prompt)
+            if ai_answer:
+                return ai_answer
+        except Exception:
+            pass
+
     # Sales
     if 'highest sales' in q or 'max sales' in q:
         if 'Sales' in df.columns:
             row = df.loc[df['Sales'].idxmax()]
-            return f"Product **{row['Product']}** had the highest sales of {row['Sales']} in {row['City']}."
+            sales_value = row['Sales']
+
+            product_col = find_column_like(df.columns, ['product'])
+            city_col = find_column_like(df.columns, ['city'])
+
+            product = row[product_col] if product_col and product_col in row.index and pd.notna(row[product_col]) else 'N/A'
+            city = row[city_col] if city_col and city_col in row.index and pd.notna(row[city_col]) else 'N/A'
+
+            if 'value' in q or 'what is' in q:
+                if city_col and 'city' in q:
+                    return f"The highest sales value is {sales_value} in {city}."
+                return f"The highest sales value is {sales_value}."
+
+            if product_col and ('product' in q or 'item' in q or 'name' in q):
+                return f"The item with the highest sales is **{product}** with {sales_value}."
+
+            if city_col and 'city' in q:
+                return f"The highest sales were recorded in **{city}** with a value of {sales_value}."
+
+            if product_col and city_col:
+                return f"{product_col} **{product}** had the highest sales of {sales_value} in {city}."
+            elif product_col:
+                return f"{product_col} **{product}** had the highest sales of {sales_value}."
+            elif city_col:
+                return f"The highest sales value is {sales_value} in {city}."
+            return f"The highest sales value is {sales_value}."
         else:
             return "No 'Sales' column found."
     if 'average age' in q:
-        if 'Customer_Age' in df.columns:
-            avg = df['Customer_Age'].mean()
-            return f"The average customer age is **{avg:.1f}** years."
+        age_col = find_age_column(df)
+        if age_col:
+            age_values = pd.to_numeric(df[age_col], errors='coerce').dropna()
+            if not age_values.empty:
+                avg = age_values.mean()
+                return f"The average age is **{avg:.1f}** years."
+            return "No usable age values found."
         else:
-            return "No 'Customer_Age' column found."
-    if 'city with maximum orders' in q or 'max orders city' in q:
-        if 'City' in df.columns:
-            city = df['City'].value_counts().idxmax()
-            count = df['City'].value_counts().max()
+            return "No age column found."
+    if 'city' in q and ('order' in q or 'orders' in q) and any(term in q for term in ['maximum', 'max', 'most', 'highest', 'largest']):
+        city_col = find_column_like(df.columns, ['city'])
+        if city_col:
+            city_counts = df[city_col].value_counts()
+            city = city_counts.idxmax()
+            count = city_counts.max()
             return f"**{city}** has the maximum orders ({count})."
         else:
-            return "No 'City' column found."
-    if 'most frequent category' in q or 'category appears most' in q:
-        if 'Category' in df.columns:
-            cat = df['Category'].value_counts().idxmax()
-            cnt = df['Category'].value_counts().max()
+            return "No city column found."
+    if 'category' in q and any(term in q for term in ['most', 'frequent', 'frequently', 'common', 'highest']) and any(term in q for term in ['appear', 'appears', 'occur', 'occurs', 'frequency']):
+        category_col = find_column_like(df.columns, ['category'])
+        if category_col:
+            cat = df[category_col].value_counts().idxmax()
+            cnt = df[category_col].value_counts().max()
             return f"**{cat}** appears most frequently ({cnt} times)."
         else:
-            return "No 'Category' column found."
+            return "No category column found."
     # Generic fallback
     return "I couldn't parse that question. Please ask about sales, age, city orders, or category frequency."
 
@@ -840,33 +948,18 @@ def generate_chart(df, chart_type):
 
 # -------------------- AI EXPLANATION (optional) --------------------
 def get_ai_explanation(df, chart_type):
-    # Try to use Groq if API key available, else fallback to template
-    api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            # Simple prompt
-            import requests
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            data_preview = df.head(5).to_string()
-            prompt = f"""
-            Given a dataset with columns: {', '.join(df.columns)}.
-            The user generated a {chart_type} chart.
-            Provide a short, easy-to-understand explanation (2-3 sentences) of the key insight from this chart.
-            Data preview:
-            {data_preview}
-            """
-            # Using Groq API (free)
-            url = "https://api.groq.com/openai/v1/chat/completions"
-            payload = {
-                "model": "llama-3.1-8b-instant",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.5
-            }
-            response = requests.post(url, json=payload, headers=headers, timeout=5)
-            if response.status_code == 200:
-                return response.json()['choices'][0]['message']['content'].strip()
-        except Exception:
-            pass
+    data_preview = df.head(5).to_string(index=False)
+    prompt = f"""
+    Given a dataset with columns: {', '.join(df.columns)}.
+    The user generated a {chart_type} chart.
+    Provide a short, easy-to-understand explanation (2-3 sentences) of the key insight from this chart.
+    Data preview:
+    {data_preview}
+    """
+    ai_answer = get_ai_response(prompt)
+    if ai_answer:
+        return ai_answer
+
     # Fallback template explanation
     if chart_type == 'Bar Chart' and 'Category' in df.columns:
         top = df['Category'].value_counts().idxmax()
@@ -1137,6 +1230,9 @@ if st.session_state.loaded and df is not None:
             st.session_state.chart_type = chart_type
             st.rerun()
 
+        if st.button("✨ Generate AI Explanation", key="ai_explain_btn", use_container_width=True):
+            st.session_state.ai_explanation = get_ai_explanation(df, st.session_state.chart_type or chart_type)
+
         if st.session_state.chart_type:
             fig = generate_chart(df, st.session_state.chart_type)
             st.markdown("<div class='chart-shell'>", unsafe_allow_html=True)
@@ -1164,8 +1260,11 @@ if st.session_state.loaded and df is not None:
             st.caption(f"Saved to: {chart_path}")
 
             st.markdown("<div class='panel-title' style='margin-top: 1rem;'>🧠 AI explanation</div>", unsafe_allow_html=True)
-            explanation = get_ai_explanation(df, st.session_state.chart_type)
-            st.markdown(f"<div class='answer-box' style='border-left-color:#a78bfa;'>{explanation}</div>", unsafe_allow_html=True)
+            explanation = st.session_state.get("ai_explanation") or get_ai_explanation(df, st.session_state.chart_type)
+            if os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY"):
+                st.markdown(f"<div class='answer-box' style='border-left-color:#a78bfa;'>{explanation}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='answer-box' style='border-left-color:#6c8cff;'>{explanation}</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
