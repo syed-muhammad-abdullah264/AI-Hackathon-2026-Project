@@ -931,20 +931,37 @@ def generate_chart(df, chart_type):
             ax.text(0.5, 0.5, 'No "Sales" column for histogram', ha='center', va='center')
     elif chart_type == 'Scatter Plot':
         if 'Sales' in df.columns and 'Quantity' in df.columns:
-            sns.scatterplot(data=df, x='Sales', y='Quantity', hue='Category', palette='Set2', ax=ax)
+            if 'Category' in df.columns:
+                sns.scatterplot(data=df, x='Sales', y='Quantity', hue='Category', palette='Set2', ax=ax)
+            else:
+                sns.scatterplot(data=df, x='Sales', y='Quantity', ax=ax)
             ax.set_title('Sales vs Quantity')
         else:
             ax.text(0.5, 0.5, 'Need "Sales" and "Quantity" columns', ha='center', va='center')
     else:  # Line chart (if date column)
         if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'])
-            grouped = df.groupby('Date')['Sales'].sum().reset_index()
-            sns.lineplot(data=grouped, x='Date', y='Sales', marker='o', ax=ax)
-            ax.set_title('Sales over Time')
+            try:
+                df['Date'] = pd.to_datetime(df['Date'])
+                grouped = df.groupby('Date')['Sales'].sum().reset_index()
+                sns.lineplot(data=grouped, x='Date', y='Sales', marker='o', ax=ax)
+                ax.set_title('Sales over Time')
+            except Exception:
+                ax.text(0.5, 0.5, 'Unable to generate line chart from the Date column', ha='center', va='center')
         else:
             ax.text(0.5, 0.5, 'No "Date" column for line chart', ha='center', va='center')
     plt.tight_layout()
     return fig
+
+# -------------------- SAFE CHART WRAPPER --------------------
+def safe_generate_chart(df, chart_type):
+    try:
+        return generate_chart(df, chart_type)
+    except Exception as e:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.text(0.5, 0.5, f"Unable to generate the selected chart type: {type(e).__name__}", ha='center', va='center', wrap=True)
+        ax.set_title('Chart generation error')
+        plt.tight_layout()
+        return fig
 
 # -------------------- AI EXPLANATION (optional) --------------------
 def get_ai_explanation(df, chart_type):
@@ -1234,7 +1251,7 @@ if st.session_state.loaded and df is not None:
             st.session_state.ai_explanation = get_ai_explanation(df, st.session_state.chart_type or chart_type)
 
         if st.session_state.chart_type:
-            fig = generate_chart(df, st.session_state.chart_type)
+            fig = safe_generate_chart(df, st.session_state.chart_type)
             st.markdown("<div class='chart-shell'>", unsafe_allow_html=True)
             st.markdown("<div class='chart-box'>", unsafe_allow_html=True)
             st.pyplot(fig)
