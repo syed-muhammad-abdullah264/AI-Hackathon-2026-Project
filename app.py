@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="AI Data Analysis Assistant",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # -------------------- CUSTOM CSS --------------------
@@ -23,7 +23,11 @@ def load_css():
     <style>
         /* ---------- GLOBAL ---------- */
         .stApp {
-            background: radial-gradient(circle at top left, rgba(108,140,255,0.14), transparent 28%), radial-gradient(circle at bottom right, rgba(167,139,250,0.12), transparent 24%), #0b0e17;
+            background-image:
+                radial-gradient(circle at top left, rgba(108,140,255,0.22), transparent 28%),
+                radial-gradient(circle at 82% 10%, rgba(167,139,250,0.16), transparent 24%),
+                linear-gradient(135deg, #0d1426 0%, #0b0e17 45%, #140f24 100%);
+            background-attachment: fixed;
             font-family: 'Inter', sans-serif;
         }
         .main > div {
@@ -33,6 +37,51 @@ def load_css():
             padding-top: 1.4rem;
             padding-bottom: 2.2rem;
             max-width: 1400px;
+            animation: pageFadeIn 0.7s ease both;
+        }
+        /* Sidebar styling */
+        section[data-testid="stSidebar"] {
+            background: linear-gradient(180deg, rgba(8, 12, 22, 0.98), rgba(17, 23, 39, 0.96));
+            border-right: 1px solid rgba(167, 139, 250, 0.2);
+        }
+        section[data-testid="stSidebar"] > div {
+            padding-top: 0.8rem;
+        }
+        .sidebar-card {
+            background: linear-gradient(135deg, rgba(21, 29, 50, 0.94), rgba(15, 20, 35, 0.9));
+            border: 1px solid rgba(108, 140, 255, 0.18);
+            border-radius: 16px;
+            padding: 0.9rem;
+            margin-bottom: 0.8rem;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+        }
+        .sidebar-section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #f4f7ff;
+            margin-bottom: 0.35rem;
+        }
+        .sidebar-list-item {
+            color: #9fb0d7;
+            font-size: 0.86rem;
+            margin-bottom: 0.35rem;
+            line-height: 1.45;
+        }
+        .stButton > button, .stDownloadButton > button {
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        }
+        .stButton > button:hover, .stDownloadButton > button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+        .stTextInput > div > div > input:focus, .stSelectbox > div > div > div:focus-within {
+            border-color: rgba(108,140,255,0.55);
+            box-shadow: 0 0 0 3px rgba(108,140,255,0.14);
+            outline: none;
+        }
+        [data-testid="stFileUploader"] > div:hover {
+            transform: translateY(-2px);
+            border-color: rgba(108,140,255,0.45);
         }
         /* Cards */
         .css-1r6slb0, .css-1v3fvcr, .css-1d391kg {
@@ -258,6 +307,11 @@ def load_css():
             padding: 1.2rem 1.3rem;
             margin-top: 0.8rem;
             box-shadow: 0 12px 30px rgba(0,0,0,0.16);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .empty-state-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 36px rgba(0,0,0,0.2);
         }
         .step-badge {
             display: inline-block;
@@ -331,6 +385,10 @@ def load_css():
         }
         @keyframes heroRise {
             from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pageFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
         /* Dark/Light toggle (manual) */
@@ -456,6 +514,12 @@ def load_css():
             margin-bottom: 1rem;
             box-shadow: 0 16px 38px rgba(0,0,0,0.2);
             animation: cardFadeIn 0.7s ease both;
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .upload-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(108,140,255,0.4);
+            box-shadow: 0 18px 42px rgba(0,0,0,0.24);
         }
         .pill-row {
             display: flex;
@@ -673,7 +737,7 @@ def generate_chart(df, chart_type):
     if chart_type == 'Bar Chart':
         if 'Category' in df.columns:
             counts = df['Category'].value_counts()
-            sns.barplot(x=counts.index, y=counts.values, palette='viridis', ax=ax)
+            sns.barplot(x=counts.index, y=counts.values, palette='viridis', ax=ax, hue=counts.index, dodge=False, legend=False)
             ax.set_title('Category Distribution', fontsize=14, fontweight='bold')
             ax.set_xlabel('Category')
             ax.set_ylabel('Count')
@@ -780,26 +844,42 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Uploader
+# Uploader and sidebar controls
 st.markdown("<div class='upload-card'>", unsafe_allow_html=True)
 st.markdown("<div class='section-title'>Upload your dataset</div>", unsafe_allow_html=True)
-st.markdown("<div class='section-subtitle' style='margin-bottom: 0.8rem;'>CSV files are supported and the app will analyze them instantly.</div>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([3, 1.1, 1.1], vertical_alignment="bottom")
-with col1:
-    uploaded_file = st.file_uploader("Drop your CSV here", type=['csv'], label_visibility="collapsed")
-with col2:
-    if st.button("📂 Use Sample Data", use_container_width=True):
+st.markdown("<div class='section-subtitle' style='margin-bottom: 0.8rem;'>Choose your data source from the sidebar or upload a CSV directly to begin analysis.</div>", unsafe_allow_html=True)
+st.markdown("<div class='tip-card'>💡 Tip: the sidebar now includes data controls, quick prompts, and next-step guidance so the workspace feels more organized.</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+
+with st.sidebar:
+    st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-section-title'>🧭 Workspace controls</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-list-item'>Use this panel to upload data, switch dataset modes, and keep the app tidy.</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-section-title'>📁 Data source</div>", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Upload CSV", type=['csv'], label_visibility="collapsed")
+    st.caption("Supported format: CSV")
+    if st.button("🧪 Use Sample Data", width="stretch"):
         st.session_state.df = generate_sample_data()
         st.session_state.loaded = True
         st.rerun()
-with col3:
-    if st.button("🧹 Clear", use_container_width=True):
+    if st.button("🧹 Clear View", width="stretch"):
         st.session_state.df = None
         st.session_state.loaded = False
         st.session_state.qa_answers = {}
         st.session_state.chart_type = 'Bar Chart'
         st.rerun()
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-section-title'>💡 Starter prompts</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-list-item'>• Which category appears most frequently?</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-list-item'>• What is the average sales value?</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-list-item'>• Which city has the highest order count?</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-list-item'>• Which product generated the highest sales?</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Load data
 if uploaded_file is not None:
@@ -885,7 +965,7 @@ if st.session_state.loaded and df is not None:
         st.markdown("<div class='panel-subtitle'>Understand what kind of information each column contains.</div>", unsafe_allow_html=True)
         dtype_df = pd.DataFrame(df.dtypes.reset_index())
         dtype_df.columns = ['Column', 'Data Type']
-        st.dataframe(dtype_df, use_container_width=True, hide_index=True)
+        st.dataframe(dtype_df, width="stretch", hide_index=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tab2:
@@ -898,7 +978,7 @@ if st.session_state.loaded and df is not None:
         st.markdown("<div class='panel-subtitle'>Key statistical insights from the numeric columns in your dataset.</div>", unsafe_allow_html=True)
         num_summary = get_numeric_summary(df)
         if not num_summary.empty:
-            st.dataframe(num_summary, use_container_width=True)
+            st.dataframe(num_summary, width="stretch")
         else:
             st.info("No numeric columns for summary.")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -906,7 +986,7 @@ if st.session_state.loaded and df is not None:
         st.markdown("<div class='analysis-panel'>", unsafe_allow_html=True)
         st.markdown("<div class='panel-title'>🔎 Data preview</div>", unsafe_allow_html=True)
         st.markdown("<div class='panel-subtitle'>Preview the first rows of your dataset in a cleaner table layout.</div>", unsafe_allow_html=True)
-        st.dataframe(df.head(10), use_container_width=True)
+        st.dataframe(df.head(10), width="stretch")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tab3:
@@ -936,7 +1016,7 @@ if st.session_state.loaded and df is not None:
                 with col1:
                     st.markdown(f"**Q{i+1}:** {q}")
                 with col2:
-                    if st.button(f"Ask #{i+1}", key=f"q_{i}", use_container_width=True):
+                    if st.button(f"Ask #{i+1}", key=f"q_{i}", width="stretch"):
                         ans = answer_question(df, q)
                         st.session_state.qa_answers[q] = ans
                         st.rerun()
@@ -945,7 +1025,7 @@ if st.session_state.loaded and df is not None:
                 st.markdown("</div>", unsafe_allow_html=True)
 
         custom_q = st.text_input("Or type your own question:", placeholder="e.g., What is the average sales?")
-        if custom_q and st.button("Ask Custom", use_container_width=True):
+        if custom_q and st.button("Ask Custom", width="stretch"):
             ans = answer_question(df, custom_q)
             st.session_state.qa_answers[custom_q] = ans
             st.rerun()
@@ -967,7 +1047,7 @@ if st.session_state.loaded and df is not None:
             ['Bar Chart', 'Pie Chart', 'Histogram', 'Scatter Plot', 'Line Chart'],
             index=0
         )
-        if st.button("Generate Chart", use_container_width=True):
+        if st.button("Generate Chart", width="stretch"):
             st.session_state.chart_type = chart_type
             st.rerun()
 
