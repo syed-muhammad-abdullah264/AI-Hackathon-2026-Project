@@ -11,7 +11,7 @@ import base64
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(
-    page_title="AI Data Analysis Assistant",
+    page_title="Data Analysis Assistant",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -771,45 +771,7 @@ def get_data_story(df):
         parts.append("This dataset contains a rich mix of values ready for exploration.")
     return " ".join(parts)
 
-# -------------------- AI HELPER --------------------
-def get_ai_response(prompt):
-    groq_key = os.getenv("GROQ_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
-
-    if not groq_key and not openai_key:
-        return None
-
-    try:
-        import requests
-
-        if groq_key:
-            url = "https://api.groq.com/openai/v1/chat/completions"
-            payload = {
-                "model": "llama-3.1-8b-instant",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.3,
-            }
-            headers = {"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}
-        else:
-            url = "https://api.openai.com/v1/chat/completions"
-            payload = {
-                "model": "gpt-4o-mini",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.3,
-            }
-            headers = {"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"}
-
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("choices"):
-                return data["choices"][0]["message"]["content"].strip()
-    except Exception:
-        return None
-
-    return None
-
-# -------------------- Q&A ENGINE (rule-based + optional AI) --------------------
+# -------------------- Q&A ENGINE (rule-based) --------------------
 def answer_question(df, question):
     q = question.lower()
 
@@ -819,26 +781,6 @@ def answer_question(df, question):
             if all(keyword in col_lower for keyword in keywords):
                 return col
         return None
-
-    def get_value_for_column(series):
-        return series.iloc[0] if len(series) > 0 else None
-
-    if os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY"):
-        try:
-            data_preview = df.head(5).to_string(index=False)
-            ai_prompt = f"""
-            You are a helpful data analyst.
-            Dataset columns: {', '.join(df.columns)}.
-            Question: {question}
-            Use the data to answer clearly and concisely in one short paragraph.
-            Data preview:
-            {data_preview}
-            """
-            ai_answer = get_ai_response(ai_prompt)
-            if ai_answer:
-                return ai_answer
-        except Exception:
-            pass
 
     # Sales
     if 'highest sales' in q or 'max sales' in q:
@@ -963,54 +905,41 @@ def safe_generate_chart(df, chart_type):
         plt.tight_layout()
         return fig
 
-# -------------------- AI EXPLANATION (optional) --------------------
-def get_ai_explanation(df, chart_type):
-    data_preview = df.head(5).to_string(index=False)
-    prompt = f"""
-    Given a dataset with columns: {', '.join(df.columns)}.
-    The user generated a {chart_type} chart.
-    Provide a short, easy-to-understand explanation (2-3 sentences) of the key insight from this chart.
-    Data preview:
-    {data_preview}
-    """
-    ai_answer = get_ai_response(prompt)
-    if ai_answer:
-        return ai_answer
-
-    # Fallback template explanation
+# -------------------- CHART EXPLANATION --------------------
+def get_chart_explanation(df, chart_type):
     if chart_type == 'Bar Chart' and 'Category' in df.columns:
         top = df['Category'].value_counts().idxmax()
         pct = (df['Category'].value_counts().max() / len(df)) * 100
-        return f"The **{top}** category has the highest frequency, accounting for approximately {pct:.1f}% of the total records."
+        return f"The **{top}** category appears most often, making up about {pct:.1f}% of the records."
     elif chart_type == 'Pie Chart' and 'Category' in df.columns:
         top = df['Category'].value_counts().idxmax()
         pct = (df['Category'].value_counts().max() / len(df)) * 100
-        return f"The **{top}** category dominates with {pct:.1f}% of the total."
+        return f"The **{top}** category dominates the data, representing about {pct:.1f}% of the total."
     elif chart_type == 'Histogram' and 'Sales' in df.columns:
-        return f"The sales distribution shows a typical range from {df['Sales'].min()} to {df['Sales'].max()}, with most values clustering around the mean."
+        return f"The sales distribution spans from {df['Sales'].min()} to {df['Sales'].max()}, with the center of the data around its average."
     elif chart_type == 'Scatter Plot':
-        return f"The scatter plot reveals the relationship between Sales and Quantity, with possible clusters by category."
+        return "The scatter plot highlights how Sales and Quantity relate to each other across the dataset."
     else:
-        return "This chart provides a visual summary of the dataset's key patterns."
+        return "This chart gives a simple visual summary of the key patterns in your data."
 
 # -------------------- UI LAYOUT --------------------
 st.markdown("""
 <div class="hero-card">
-    <div class="hero-badge">✨ Smart analytics workspace</div>
-    <div class="hero-title">AI Data Analysis Assistant</div>
+    <div class="hero-badge">✨ Interactive analytics workspace</div>
+    <div class="hero-title">Data Analysis Assistant</div>
     <div class="hero-subtitle">
         Upload a CSV, ask questions, generate charts, and uncover insights in a polished workspace.
     </div>
-    <div class="status-ribbon"><span class="status-dot"></span> Live insights ready · Smart analysis mode</div>
+    <div class="status-ribbon"><span class="status-dot"></span> Live insights ready · Simple analysis mode</div>
     <div class="pill-row">
         <span class="pill">📁 CSV Upload</span>
         <span class="pill">❓ Natural Q&A</span>
         <span class="pill">📈 Instant Charts</span>
-        <span class="pill">🧠 AI Insights</span>
+        <span class="pill">📊 Clear Insights</span>
     </div>
     <div class="feature-strip">
         <span class="feature-pill">⚡ Instant insights</span>
-        <span class="feature-pill">🧠 Smart Q&A</span>
+        <span class="feature-pill">💬 Smart Q&A</span>
         <span class="feature-pill">📤 Export-ready visuals</span>
     </div>
     <div class="workflow-grid">
@@ -1247,9 +1176,6 @@ if st.session_state.loaded and df is not None:
             st.session_state.chart_type = chart_type
             st.rerun()
 
-        if st.button("✨ Generate AI Explanation", key="ai_explain_btn", use_container_width=True):
-            st.session_state.ai_explanation = get_ai_explanation(df, st.session_state.chart_type or chart_type)
-
         if st.session_state.chart_type:
             fig = safe_generate_chart(df, st.session_state.chart_type)
             st.markdown("<div class='chart-shell'>", unsafe_allow_html=True)
@@ -1276,12 +1202,9 @@ if st.session_state.loaded and df is not None:
             )
             st.caption(f"Saved to: {chart_path}")
 
-            st.markdown("<div class='panel-title' style='margin-top: 1rem;'>🧠 AI explanation</div>", unsafe_allow_html=True)
-            explanation = st.session_state.get("ai_explanation") or get_ai_explanation(df, st.session_state.chart_type)
-            if os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY"):
-                st.markdown(f"<div class='answer-box' style='border-left-color:#a78bfa;'>{explanation}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div class='answer-box' style='border-left-color:#6c8cff;'>{explanation}</div>", unsafe_allow_html=True)
+            st.markdown("<div class='panel-title' style='margin-top: 1rem;'>📝 Chart explanation</div>", unsafe_allow_html=True)
+            explanation = get_chart_explanation(df, st.session_state.chart_type)
+            st.markdown(f"<div class='answer-box' style='border-left-color:#6c8cff;'>{explanation}</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
@@ -1300,4 +1223,4 @@ else:
 
 # Footer
 st.markdown("---")
-st.caption("✨ AI Data Analysis Challenge · Hackathon 2026")
+st.caption("✨ Data Analysis Challenge · Hackathon 2026")
