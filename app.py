@@ -391,6 +391,11 @@ def load_css():
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes pulseDot {
+            0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.35); }
+            70% { box-shadow: 0 0 0 8px rgba(74,222,128,0); }
+            100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+        }
         /* Dark/Light toggle (manual) */
         .theme-toggle {
             display: flex;
@@ -527,6 +532,57 @@ def load_css():
             gap: 0.6rem;
             margin: 0.8rem 0 1rem;
         }
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.9rem;
+        }
+        .workflow-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 0.8rem 0.9rem;
+            backdrop-filter: blur(8px);
+            transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+        .workflow-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(108,140,255,0.3);
+        }
+        .feature-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+            margin-top: 0.8rem;
+        }
+        .feature-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.38rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
+            color: #dbe8ff;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .workflow-icon {
+            font-size: 1.1rem;
+            margin-bottom: 0.35rem;
+        }
+        .workflow-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #f4f7ff;
+            margin-bottom: 0.2rem;
+        }
+        .workflow-text {
+            font-size: 0.8rem;
+            color: #9fb0d7;
+            line-height: 1.4;
+        }
         .pill {
             display: inline-flex;
             align-items: center;
@@ -558,6 +614,13 @@ def load_css():
             font-weight: 700;
             animation: pulse 2.2s ease-in-out infinite;
         }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulseDot 1.8s infinite;
+        }
         .stDownloadButton button {
             background: linear-gradient(135deg, #6c8cff, #a78bfa);
             color: white;
@@ -569,6 +632,7 @@ def load_css():
         @media (max-width: 600px) {
             .metric-value { font-size: 1.6rem; }
             .hero-title { font-size: 1.6rem; }
+            .workflow-grid { grid-template-columns: 1fr; }
         }
     </style>
     """, unsafe_allow_html=True)
@@ -827,12 +891,34 @@ st.markdown("""
     <div class="hero-subtitle">
         Upload a CSV, ask questions, generate charts, and uncover insights in a polished workspace.
     </div>
-    <div class="status-ribbon">⚡ Live insights ready · Smart analysis mode</div>
+    <div class="status-ribbon"><span class="status-dot"></span> Live insights ready · Smart analysis mode</div>
     <div class="pill-row">
         <span class="pill">📁 CSV Upload</span>
         <span class="pill">❓ Natural Q&A</span>
         <span class="pill">📈 Instant Charts</span>
         <span class="pill">🧠 AI Insights</span>
+    </div>
+    <div class="feature-strip">
+        <span class="feature-pill">⚡ Instant insights</span>
+        <span class="feature-pill">🧠 Smart Q&A</span>
+        <span class="feature-pill">📤 Export-ready visuals</span>
+    </div>
+    <div class="workflow-grid">
+        <div class="workflow-card">
+            <div class="workflow-icon">📂</div>
+            <div class="workflow-title">Smart upload</div>
+            <div class="workflow-text">Bring any CSV in seconds and start exploring right away.</div>
+        </div>
+        <div class="workflow-card">
+            <div class="workflow-icon">💬</div>
+            <div class="workflow-title">Ask anything</div>
+            <div class="workflow-text">Get instant answers about sales, customers, city trends, and more.</div>
+        </div>
+        <div class="workflow-card">
+            <div class="workflow-icon">✨</div>
+            <div class="workflow-title">Share insights</div>
+            <div class="workflow-text">Generate charts and export polished visuals in one click.</div>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
